@@ -11,6 +11,9 @@ use rqmesh_core::{AgentInitializationContext, InitializationErrorKind, RqMeshErr
 use rqmesh_core::{RqMeshProtocolAction, RqMeshFrame, DescribeAgentRequest, DescribeAgentResponse };
 use simplelog::{ColorChoice, Config, TermLogger, TerminalMode};
 
+use std::net::{SocketAddrV4, Ipv4Addr, TcpListener};
+use std::io::{Read, Error};
+
 fn main() {
     let log_level = match std::env::var("RUST_LOG_LEVEL")
         .and_then(|e| Ok(e.to_ascii_lowercase()))
@@ -85,7 +88,9 @@ fn main() {
     let agent: Agent = init_context.try_into().expect("failed to create agent");
 
     info!("Successfully initialized {}", &agent);
-    info!("{:?}", serialize(&agent.describe()));
+    
+    info!("Starting listener");
+    agent.listen();
 }
 
 pub struct Agent {
@@ -117,5 +122,19 @@ impl Agent {
         }).map_err(|e| RqMeshError::from(InitializationErrorKind::new_sqlite_init_err(format!("{}", e))))?;
 
         Ok(res)
+    }
+
+    fn listen(&self) -> Result<(), Error> {
+        let loopback = Ipv4Addr::new(127, 0, 0, 1);
+        let socket = SocketAddrV4::new(loopback, 0);
+        let listener = TcpListener::bind(socket)?;
+        let port = listener.local_addr()?;
+        info!("Listening on {}, access this port to end the program", port);
+        let (mut tcp_stream, addr) = listener.accept()?; //block  until requested
+        info!("Connection received! {:?} is sending data.", addr);
+        let mut input = String::new();
+        let _ = tcp_stream.read_to_string(&mut input)?;
+        info!("{:?} says {}", addr, input);
+        Ok(())
     }
 }
