@@ -8,3 +8,6 @@ edition = "2018"
 [dependencies]
 rusqlite = "0.26" 
 clap = "2"
+rqmesh-core = { path = "../rqmesh-core" }
+log = "0.4"
+simplelog = "0.10"
