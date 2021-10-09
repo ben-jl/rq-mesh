@@ -19,3 +19,9 @@
     ```bash
     apk add gcc # Alpine Linux
     ```
+
+4. Install sqlite3 if necessary
+
+    ```bash
+    apk add sqlite # Alpine Linux
+    ```
