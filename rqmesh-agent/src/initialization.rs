@@ -1,8 +1,9 @@
 use rqmesh_core::{AgentInitializationContext, RqMeshError, InitializationErrorKind};
 use crate::Agent;
 use std::convert::TryFrom;
-use std::process::{Command, ExitStatus};
-use log::{info,trace,debug,error,warn};
+use std::process::{Command};
+use log::{info,trace,error,warn};
+use rusqlite::{Connection};
 
 type Result<T> = std::result::Result<T, RqMeshError>;
 
@@ -24,7 +25,8 @@ impl TryFrom<AgentInitializationContext> for Agent {
         }?;
         
         check_store_path(&value)?;
-        Ok(Agent {})
+        let conn = Connection::open(value.store_path()).map_err(|e| RqMeshError::from(InitializationErrorKind::new_sqlite_init_err(format!("{}", e))))?;
+        Ok(Agent { connection: conn })
     }
 }
 
@@ -99,11 +101,7 @@ fn check_store_path(ctx: &AgentInitializationContext) -> Result<()> {
         if !dir.exists() {
             error!("Store location directory {} not found, try creating and restarting the agent", dir.to_str().unwrap_or("NONE"));
             return Err(RqMeshError::from(InitializationErrorKind::new_invalid_store_location(pbuf.to_str().unwrap_or("NONE"), format!("Directory {} not found", dir.to_str().unwrap_or("NONE")))));
-        } else {
-            info!("Attempting to create storage file {}", pbuf.to_str().unwrap_or("NONE"));
-            std::fs::File::create(pbuf).map_err(|e| RqMeshError::from(InitializationErrorKind::new_invalid_store_location(pbuf.to_str().unwrap_or("NONE"), format!("Unable to create store: {}", e))))?;
-            info!("Storage file {} created", pbuf.to_str().unwrap_or("NONE"));
-        }
+        } 
     } else {
         trace!("{} already exists, no action necessary", pbuf.to_str().unwrap_or("NONE"));
     }

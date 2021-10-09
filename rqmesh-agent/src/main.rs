@@ -53,7 +53,7 @@ fn main() {
     println!("Hello, world!");
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Agent {
-
+    connection: rusqlite::Connection
 }
+

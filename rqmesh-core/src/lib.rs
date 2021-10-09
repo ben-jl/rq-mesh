@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::{PathBuf};
 
 #[derive(Debug,Clone, PartialEq, PartialOrd, Eq, Ord)]
 pub struct CapabilityBroadcast {
@@ -60,10 +60,16 @@ pub enum InitializationErrorKind {
     InvalidStoreLocation { store_location: String, message: String },
     InvalidCheckDependenciesCommand { command: String, message: String },
     MissingRequiredDependencies { message : String },
-    InvalidInstallDependenciesCommand { command: String, message: String }
+    InvalidInstallDependenciesCommand { command: String, message: String },
+    SqliteInitializationError { message: String }
 }
 
 impl InitializationErrorKind {
+    pub fn new_sqlite_init_err<S>(message : S) -> InitializationErrorKind where S : Into<String> {
+        let message = message.into();
+        InitializationErrorKind::SqliteInitializationError { message }
+    }
+
     pub fn new_invalid_check_deps_cmd<S1, S2>(command: S1, message: S2) -> InitializationErrorKind where S1 : Into<String>, S2: Into<String> {
         let command : String = command.into();
         let message : String = message.into();
@@ -95,7 +101,7 @@ impl std::fmt::Display for InitializationErrorKind {
             InitializationErrorKind::InvalidCheckDependenciesCommand { command, message } => write!(f, "InvalidCheckDependenciesCommand ({}): {}", command, message),
             InitializationErrorKind::MissingRequiredDependencies { message  } => write!(f, "MissingRequiredDependencies: {}", message),
             InitializationErrorKind::InvalidInstallDependenciesCommand { command, message } => write!(f, "InvalidInstallDependenciesCommand ({}): {}", command, message),
-
+            InitializationErrorKind::SqliteInitializationError { message } => write!(f, "SqliteInitializationError: {}", message)
         }?;
         Ok(())
     }

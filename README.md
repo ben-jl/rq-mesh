@@ -51,3 +51,9 @@
     ```bash
     cargo install cargo-watch
     ```
+
+9. Ensure sqlite3 libs installed
+
+    ```bash
+    apk add sqlite-dev
+    ```
