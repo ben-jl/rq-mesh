@@ -1,6 +1,9 @@
+mod protocol;
+pub use protocol::{RqMeshFrame, DescribeAgentResponse, DescribeAgentRequest, RqMeshProtocolAction};
 use std::path::PathBuf;
+use serde::{Serialize, Deserialize};
 
-const version: &'static str = "0.0.1";
+const VERSION: &'static str = "0.1.0";
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord)]
 pub struct CapabilityBroadcast {
@@ -33,7 +36,7 @@ impl AgentInitializationContext {
             store_path,
             check_deps_command,
             install_deps_command,
-            version,
+            version: VERSION,
         }
     }
 
@@ -54,7 +57,7 @@ impl AgentInitializationContext {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord)]
+#[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Serialize, Deserialize)]
 pub enum RqMeshError {
     InitializationError(InitializationErrorKind),
 }
@@ -76,7 +79,7 @@ impl std::fmt::Display for RqMeshError {
 
 impl std::error::Error for RqMeshError {}
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum InitializationErrorKind {
     InvalidStoreLocation {
         store_location: String,

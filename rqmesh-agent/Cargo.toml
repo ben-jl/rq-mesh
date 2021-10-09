@@ -11,3 +11,5 @@ clap = "2"
 rqmesh-core = { path = "../rqmesh-core" }
 log = "0.4"
 simplelog = "0.10"
+serde = { version = "1", features = ["derive"]}
+bincode = "1.3"

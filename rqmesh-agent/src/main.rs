@@ -4,9 +4,11 @@ use std::{
 };
 
 mod initialization;
-
+use serde::{Deserialize, Serialize};
+use bincode::{deserialize, serialize};
 use log::{info, LevelFilter};
-use rqmesh_core::AgentInitializationContext;
+use rqmesh_core::{AgentInitializationContext, InitializationErrorKind, RqMeshError};
+use rqmesh_core::{RqMeshProtocolAction, RqMeshFrame, DescribeAgentRequest, DescribeAgentResponse };
 use simplelog::{ColorChoice, Config, TermLogger, TerminalMode};
 
 fn main() {
@@ -83,6 +85,7 @@ fn main() {
     let agent: Agent = init_context.try_into().expect("failed to create agent");
 
     info!("Successfully initialized {}", &agent);
+    info!("{:?}", serialize(&agent.describe()));
 }
 
 pub struct Agent {
@@ -100,5 +103,19 @@ impl std::fmt::Display for Agent {
 
         write!(f, "{}", vstr)?;
         Ok(())
+    }
+}
+
+impl Agent {
+    fn describe(&self) -> Result<DescribeAgentResponse, RqMeshError> {
+        let res = self.connection.query_row("SELECT version, store_location, initialized_at FROM agent_details ORDER BY initialized_at DESC LIMIT 1", [], 
+        |row| {
+            let version : String = row.get(0)?;
+            let store_location : String = row.get(1)?;
+            let initialized_at : String = row.get(2)?;
+            Ok(DescribeAgentResponse::new(version, store_location, initialized_at))
+        }).map_err(|e| RqMeshError::from(InitializationErrorKind::new_sqlite_init_err(format!("{}", e))))?;
+
+        Ok(res)
     }
 }
