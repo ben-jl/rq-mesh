@@ -1,4 +1,5 @@
 [workspace]
 members = [
-    "rqmesh-core"
+    "rqmesh-core",
+    "rqmesh-agent"
 ]

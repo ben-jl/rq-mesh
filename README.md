@@ -13,3 +13,9 @@
     ```bash
     rustup update
     ```
+
+3. Install gcc if necessary
+
+    ```bash
+    apk add gcc # Alpine Linux
+    ```
