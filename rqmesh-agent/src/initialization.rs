@@ -15,11 +15,16 @@ impl TryFrom<AgentInitializationContext> for Agent {
         let check_deps_result = check_dependencies_present(&value);
         if let Err(RqMeshError::InitializationError(InitializationErrorKind::MissingRequiredDependencies { message })) = check_deps_result {
             warn!("Missing required dependencies: {}", &message);
+            try_install_missing_dependencies(&value)?;
+            
+            check_dependencies_present(&value)?;
             Ok(())
         } else {
             check_deps_result
         }?;
-        todo!()
+        
+        check_store_path(&value)?;
+        Ok(Agent {})
     }
 }
 
@@ -50,5 +55,58 @@ fn check_dependencies_present(ctx: &AgentInitializationContext) -> Result<()> {
         }
     }?;
 
+    Ok(())
+}
+
+fn try_install_missing_dependencies(ctx: &AgentInitializationContext) -> Result<()> {
+    info!("Attempting to install missing dependencies using context cmd {}", ctx.install_deps_command());
+
+    let raw_cmd = ctx.install_deps_command();
+    let split_cmd : Vec<&str> = raw_cmd.split_ascii_whitespace().collect();
+    
+    trace!("Attempting to get program name from string array {:?}", &split_cmd);
+    let program : String = split_cmd.get(0).map_or(Err(RqMeshError::from(InitializationErrorKind::new_invalid_install_deps_cmd(raw_cmd, "Command text must be non-empty"))), |c| Ok(c.to_string()))?;
+    trace!("Retrieved program name {}", &program);
+
+    trace!("Attempting to get args array (if any) from string array {:?}", &split_cmd);
+    let args = &split_cmd[1..];
+    trace!("Found args array {:?}", &args);
+
+    trace!("Executing {} with args {:?}", &program, &args);
+    let output = Command::new(&program).args(args).output().map_err(|e| RqMeshError::from(InitializationErrorKind::new_invalid_install_deps_cmd(program, format!("{}", e))))?;
+    
+    match (&output.status, &output.stdout, &output.stderr) {
+        (ecode, sout, serr) if !ecode.success() => Err(RqMeshError::from(InitializationErrorKind::new_invalid_install_deps_cmd(raw_cmd, format!("Exit code indicates error: {:?} + {:?}", sout, serr)))),
+        (_, sout, _) => {
+            let sout = String::from_utf8(sout.to_vec()).map_err(|e| RqMeshError::from(InitializationErrorKind::new_invalid_install_deps_cmd(raw_cmd, format!("Error inspecting std out: {}", e))))?;
+            info!("Install dependency command returned with valid exit code and output {}", &sout.trim());
+            Ok(())
+        }
+    }?;
+
+    Ok(())
+}
+
+fn check_store_path(ctx: &AgentInitializationContext) -> Result<()> {
+    info!("Ensuring store location {} exists and is reachable", ctx.store_path().to_str().unwrap_or("NONE"));
+
+    let pbuf = ctx.store_path();
+    trace!("Checking if {} already exists", pbuf.to_str().unwrap_or("NONE"));
+    if !pbuf.exists() {
+        trace!("File {} not found, attempting to create", pbuf.to_str().unwrap_or("NONE"));
+        let dir = pbuf.parent().ok_or(RqMeshError::from(InitializationErrorKind::new_invalid_store_location(pbuf.to_str().unwrap_or("NONE"), format!("Could not find directory {}", pbuf.to_str().unwrap_or("NONE")))))?;
+        trace!("Ensuring parent directory {} exists", dir.to_str().unwrap_or("NONE"));
+        if !dir.exists() {
+            error!("Store location directory {} not found, try creating and restarting the agent", dir.to_str().unwrap_or("NONE"));
+            return Err(RqMeshError::from(InitializationErrorKind::new_invalid_store_location(pbuf.to_str().unwrap_or("NONE"), format!("Directory {} not found", dir.to_str().unwrap_or("NONE")))));
+        } else {
+            info!("Attempting to create storage file {}", pbuf.to_str().unwrap_or("NONE"));
+            std::fs::File::create(pbuf).map_err(|e| RqMeshError::from(InitializationErrorKind::new_invalid_store_location(pbuf.to_str().unwrap_or("NONE"), format!("Unable to create store: {}", e))))?;
+            info!("Storage file {} created", pbuf.to_str().unwrap_or("NONE"));
+        }
+    } else {
+        trace!("{} already exists, no action necessary", pbuf.to_str().unwrap_or("NONE"));
+    }
+    
     Ok(())
 }

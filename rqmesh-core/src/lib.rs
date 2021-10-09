@@ -59,7 +59,8 @@ impl std::error::Error for RqMeshError { }
 pub enum InitializationErrorKind {
     InvalidStoreLocation { store_location: String, message: String },
     InvalidCheckDependenciesCommand { command: String, message: String },
-    MissingRequiredDependencies { message : String }
+    MissingRequiredDependencies { message : String },
+    InvalidInstallDependenciesCommand { command: String, message: String }
 }
 
 impl InitializationErrorKind {
@@ -73,6 +74,18 @@ impl InitializationErrorKind {
         let message = message.into();
         InitializationErrorKind::MissingRequiredDependencies { message }
     }
+
+    pub fn new_invalid_install_deps_cmd<S1, S2>(command: S1, message: S2) -> InitializationErrorKind where S1 : Into<String>, S2: Into<String> {
+        let command : String = command.into();
+        let message : String = message.into();
+        InitializationErrorKind::InvalidInstallDependenciesCommand { command, message }
+    }
+
+    pub fn new_invalid_store_location<S1, S2>(store_location: S1, message: S2) -> InitializationErrorKind where S1 : Into<String>, S2: Into<String> {
+        let store_location = store_location.into();
+        let message = message.into();
+        InitializationErrorKind::InvalidStoreLocation { store_location, message }
+    }
 }
 
 impl std::fmt::Display for InitializationErrorKind {
@@ -80,7 +93,9 @@ impl std::fmt::Display for InitializationErrorKind {
         match &self {
             InitializationErrorKind::InvalidStoreLocation { store_location, message } => write!(f,"InvalidStoreLocation ({}): {}", store_location, message),
             InitializationErrorKind::InvalidCheckDependenciesCommand { command, message } => write!(f, "InvalidCheckDependenciesCommand ({}): {}", command, message),
-            InitializationErrorKind::MissingRequiredDependencies { message  } => write!(f, "MissingRequiredDependencies: {}", message)
+            InitializationErrorKind::MissingRequiredDependencies { message  } => write!(f, "MissingRequiredDependencies: {}", message),
+            InitializationErrorKind::InvalidInstallDependenciesCommand { command, message } => write!(f, "InvalidInstallDependenciesCommand ({}): {}", command, message),
+
         }?;
         Ok(())
     }

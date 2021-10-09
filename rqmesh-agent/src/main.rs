@@ -2,13 +2,12 @@ use std::{convert::{TryFrom, TryInto}, path::PathBuf};
 
 mod initialization;
 
-use clap::{App, Arg, ArgMatches};
 use rqmesh_core::AgentInitializationContext;
 use log::{LevelFilter};
 use simplelog::{ColorChoice, Config, TermLogger, TerminalMode};
 
 fn main() {
-    let log_level = match dbg!(std::env::var("RUST_LOG_LEVEL")).and_then(|e| Ok(e.to_ascii_lowercase())).as_deref() {
+    let log_level = match std::env::var("RUST_LOG_LEVEL").and_then(|e| Ok(e.to_ascii_lowercase())).as_deref() {
         Ok("trace") => LevelFilter::Trace,
         Ok("debug") => LevelFilter::Debug,
         Ok("info") => LevelFilter::Info,
@@ -28,7 +27,7 @@ fn main() {
                 .help("Location of sqlite database")
                 .takes_value(true)
                 .multiple(false)
-                .default_value("rqmesh-agent.db"))
+                .default_value("./.rqmesh-agent.db"))
         .arg(clap::Arg::with_name("CHECK_CMD")
                 .long("check-cmd")
                 .takes_value(true)
