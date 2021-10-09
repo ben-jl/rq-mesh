@@ -25,3 +25,29 @@
     ```bash
     apk add sqlite # Alpine Linux
     ```
+
+5. Install nightly toolchain
+
+    ```bash
+    rustup install nightly
+    ```
+
+6. Install libc libraries
+
+    ```bash
+    apk add libc-dev=0.7.1-r0 # Alpine Linux
+    ```
+
+7. Export necessary files for linker to path
+
+    ```bash
+    PATH=$PATH:/root/.rustup/toolchains/nightly-x86_64-unknown-linux-musl/lib/rustlib/x86_64-unknown-linux-musl/lib/self-contained
+
+    export PATH
+    ```
+
+8. Install cargo-watch
+
+    ```bash
+    cargo install cargo-watch
+    ```
