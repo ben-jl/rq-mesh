@@ -1,5 +1,7 @@
 use std::path::{PathBuf};
 
+const version : &'static str = "0.0.1";
+
 #[derive(Debug,Clone, PartialEq, PartialOrd, Eq, Ord)]
 pub struct CapabilityBroadcast {
     capability_type: String
@@ -9,7 +11,8 @@ pub struct CapabilityBroadcast {
 pub struct AgentInitializationContext {
     store_path : PathBuf,
     check_deps_command : String,
-    install_deps_command : String
+    install_deps_command : String,
+    version: &'static str
 }
 
 impl AgentInitializationContext {
@@ -17,7 +20,7 @@ impl AgentInitializationContext {
         let store_path : PathBuf = store_path.into();
         let check_deps_command : String = check_deps_command.into();
         let install_deps_command : String = install_deps_command.into();
-        AgentInitializationContext { store_path, check_deps_command, install_deps_command }
+        AgentInitializationContext { store_path, check_deps_command, install_deps_command, version }
     }
 
     pub fn store_path(&self) -> &PathBuf {
@@ -30,6 +33,10 @@ impl AgentInitializationContext {
 
     pub fn install_deps_command(&self) -> &str {
         &self.install_deps_command
+    }
+
+    pub fn version(&self) -> &str {
+        &self.version
     }
 }
 

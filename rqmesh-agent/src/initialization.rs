@@ -3,7 +3,7 @@ use crate::Agent;
 use std::convert::TryFrom;
 use std::process::{Command};
 use log::{info,trace,error,warn};
-use rusqlite::{Connection};
+use rusqlite::{Connection, params};
 
 type Result<T> = std::result::Result<T, RqMeshError>;
 
@@ -26,6 +26,7 @@ impl TryFrom<AgentInitializationContext> for Agent {
         
         check_store_path(&value)?;
         let conn = Connection::open(value.store_path()).map_err(|e| RqMeshError::from(InitializationErrorKind::new_sqlite_init_err(format!("{}", e))))?;
+        let conn = validate_or_initialize_sqlite_connection(&value, conn)?;
         Ok(Agent { connection: conn })
     }
 }
@@ -107,4 +108,18 @@ fn check_store_path(ctx: &AgentInitializationContext) -> Result<()> {
     }
     
     Ok(())
+}
+
+fn validate_or_initialize_sqlite_connection(ctx: &AgentInitializationContext, conn: Connection) -> Result<Connection> {
+    trace!("Ensuring agent_details table exists");
+    conn.execute("
+        CREATE TABLE IF NOT EXISTS agent_details (version VARCHAR(10) NOT NULL, store_location NVARCHAR(1024) NOT NULL, initialized_at VARCHAR(100) NOT NULL, UNIQUE(version, store_location));
+       
+        ",
+          []).map_err(|e| RqMeshError::from(InitializationErrorKind::new_sqlite_init_err(format!("Error creating agent_details table: {}", e))))?;
+
+    trace!("Ensuring agent_details table is populated with current version and details");
+    conn.execute("INSERT OR IGNORE INTO agent_details (version, store_location, initialized_at) VALUES (?1, ?2, datetime('now'));", 
+        params![ctx.version(), ctx.store_path().to_str().unwrap_or("NA")]).map_err(|e| RqMeshError::from(InitializationErrorKind::new_sqlite_init_err(format!("Error inserting into agent_details table: {}", e))))?;
+    Ok(conn)
 }

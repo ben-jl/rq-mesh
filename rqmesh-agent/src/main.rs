@@ -3,7 +3,7 @@ use std::{convert::{TryFrom, TryInto}, path::PathBuf};
 mod initialization;
 
 use rqmesh_core::AgentInitializationContext;
-use log::{LevelFilter};
+use log::{LevelFilter, info};
 use simplelog::{ColorChoice, Config, TermLogger, TerminalMode};
 
 fn main() {
@@ -48,12 +48,25 @@ fn main() {
 
     let init_context = AgentInitializationContext::new(store_location, check_dependencies_command, install_dependcies_command);
 
-    let agent: Agent = init_context.try_into().expect("failed");
+    let agent: Agent = init_context.try_into().expect("failed to create agent");
     
-    println!("Hello, world!");
+    info!("Successfully initialized {}", &agent);
 }
 
 pub struct Agent {
     connection: rusqlite::Connection
 }
 
+impl std::fmt::Display for Agent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let vstr = self.connection.query_row("SELECT version, store_location, initialized_at FROM agent_details ORDER BY initialized_at DESC LIMIT 1", [], |row| {
+            let version = row.get(0).unwrap_or("RETRIEVAL ERROR".to_string());
+            let store_location = row.get(1).unwrap_or("RETRIEVAL ERROR".to_string());
+            let initialized_at = row.get(2).unwrap_or("RETRIEVAL ERROR".to_string());
+            Ok(format!("agent v{} @ {}: {}", version, initialized_at, store_location))
+        }).expect("retrieval error");
+
+        write!(f, "{}", vstr)?;
+        Ok(())
+    }
+}

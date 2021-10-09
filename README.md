@@ -57,3 +57,9 @@
     ```bash
     apk add sqlite-dev
     ```
+
+10. If using cargo-watch
+
+    ```bash
+    RUST_LOG_LEVEL=TRACE cargo watch -x 'run'
+    ```
